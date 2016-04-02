@@ -4,13 +4,13 @@
 
 There are lots of Python packages out there, but none for elections, polls, and other politics-related data visualization. Let´s code it.
 
-Heavily influenced by [@kikollan](https://twitter.com/kikollan) plots for [El Español](http://www.elespanol.com/kiko_llaneras/).
+Heavily influenced by [@kikollan](https://twitter.com/kikollan) visualizations for [El Español](http://www.elespanol.com/kiko_llaneras/).
 
 For some of the current features see [/examples/features](https://github.com/cesans/mapache/blob/master/examples/features.ipynb).
 
 TODOs
 
-* Plots, yeah
-* Smart color selections to avoid clashes
-* Automatic label placement to avoid overlaps
+* Plots
+* Smart color selection to avoid clashes
+* Automatic label placement without overlaps
 * Name matching between polls and parties
