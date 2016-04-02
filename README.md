@@ -4,7 +4,7 @@
 
 There are lots of Python packages out there, but none for elections, polls, and other politics-related data visualization. Let´s code it.
 
-Heavily influenced by [@kikollan](https://twitter.com/kikollan) visualizations for [El Español](http://www.elespanol.com/kiko_llaneras/).
+Heavily 'influenced' by [@kikollan](https://twitter.com/kikollan) visualizations for [El Español](http://www.elespanol.com/kiko_llaneras/), no clue if he agrees with this idea.
 
 For some of the current features see [/examples/features](https://github.com/cesans/mapache/blob/master/examples/features.ipynb).
 
