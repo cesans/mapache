@@ -8,6 +8,20 @@ from matplotlib import gridspec
 from sklearn import gaussian_process
 
 
+def _percentage_formatter(y, _):
+    """ TODO
+    :param y:
+    :return:
+    """
+
+    s = str(y)
+
+    if matplotlib.rcParams['text.usetex'] is True:
+        return s + r'$\%$'
+    else:
+        return s + '%'
+
+
 class PollVis:
     """ TODO
     """
@@ -130,7 +144,7 @@ class PollVis:
         ax.spines['left'].set_visible(False)
         ax.yaxis.set_ticks_position('none')
         ax.xaxis.set_ticks_position('bottom')
-        formatter = FuncFormatter(self.__percentage_formatter)
+        formatter = FuncFormatter(_percentage_formatter)
         ax.get_yaxis().set_major_formatter(formatter)
 
         ax.set_xlim(polls['dates'][0] - 0.5, polls['dates'][-1] + 0.5)
@@ -150,7 +164,7 @@ class PollVis:
         if single:
             ax.scatter(x, y, 70, c=self.parties[partyname].color, edgecolors='none', label=u'Observations')
         else:
-            ax.scatter(x, y, c=np.append(self.parties[partyname].color, 0.6), edgecolors='none', s=40,
+            ax.scatter(x, y, c=np.append(self.parties[partyname].color, [0.6]), edgecolors='none', s=40,
                        label=u'Observations')
 
     def __gp(self, x, y, ax, partyname):
@@ -176,22 +190,5 @@ class PollVis:
         ax.fill(np.concatenate([x_dense, x_dense[::-1]]),
                 np.concatenate([y_pred - 1.9600 * sigma,
                                 (y_pred + 1.9600 * sigma)[::-1]]),
-                scolor=np.append(self.parties[partyname].color, 0.1), fc='b', ec='None',
+                color=np.append(self.parties[partyname].color, [0.1]), fc='b', ec='None',
                 label='95% confidence interval')
-
-    def __percentage_formatter(self, y, position):
-        """ TODO
-        :param y:
-        :param position:
-        :return:
-        """
-
-        # Ignore the passed in position. This has the effect of scaling the default
-        # tick locations.
-        s = str(y)
-
-        # The percent symbol needs escaping in latex
-        if matplotlib.rcParams['text.usetex'] is True:
-            return s + r'$\%$'
-        else:
-            return s + '%'
