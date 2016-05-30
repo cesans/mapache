@@ -7,43 +7,61 @@ from sklearn.utils import shuffle
 import matplotlib.pylab as plt
 import numpy as np
 
+from io import BytesIO
+from IPython.core.display import display, HTML
+
+from scipy.misc import imsave
+import base64
+
 
 class Party:
-    """ TODO
+    """ A political party.
 
     """
 
-    def __init__(self, name, picture_url, short_name=None, full_name=None):
-        """ TODO
+    def __init__(self, name, picture_url, short_name=None, full_name=None,
+                 extra_names=None):
+        """ A political party.
 
-        :param name:
-        :param picture_url:
-        :param short_name:
-        :param full_name:
-        :return:
+        :param name: Preferred name of the party to be used
+        :param picture_url: url to the party logo, the color for the party will
+                be generated from the image
+        :param short_name: Name of the party displayed when there is no space
+                or the preferred name is
+        :param full_name: Oficial name of the party
+        :param extra_names: Extra names (to help the algorithms to find the
+                party in polls
         """
-
         self.name = name
         self._img = _get_image(picture_url)
         self.color = _get_color(self._img)
+
         if not short_name:
             short_name = name
         if not full_name:
             full_name = name
+        if not extra_names:
+            extra_names = []
+
         self.full_name = full_name
         self.short_name = short_name[:4]
+        self.extra_names = extra_names
 
     def show(self):
-        """ TODO
-
-        :return:
+        """  Displays the information of the political party.
         """
 
         print('Name: {0}'.format(self.name))
         print('Full name: {0}'.format(self.full_name))
         print('Short name: {0}'.format(self.short_name))
-        plt.imshow(self._img, interpolation='nearest')
+
+        fig = plt.imshow(self._img, interpolation='nearest')
+
         plt.axis('off')
+        fig.axes.get_xaxis().set_visible(False)
+        fig.axes.get_yaxis().set_visible(False)
+
+        return fig
 
 
 class PartySet:
@@ -80,6 +98,9 @@ class PartySet:
             self.__current += 1
             return self.parties[self.__current]
 
+    def keys(self):
+        return self.parties.keys()
+
     def add(self, party):
         """ TODO
 
@@ -87,6 +108,26 @@ class PartySet:
         :return:
         """
         self.parties[party.name.upper()] = party
+
+    def __get_html_img(self, img):
+        buf = BytesIO()
+        imsave(buf, img, format='png')
+        buf.seek(0)
+        img_64 = base64.b64encode(buf.read())
+        return '''<img style="height:80px;display: block;margin: 0 auto;"
+                  src="data:image/png;base64,{0}\">
+                  '''.format(img_64.decode("utf8"))
+
+    def show_parties(self):
+        html = ""
+        for party in self.parties.keys():
+            html += '''<div style="margin:10px;border:1px solid gray;
+                       padding: 20px">'''
+            html += self.__get_html_img(self.parties[party]._img)
+            html += ("<h3 style=\"text-align:center\">" + party + " - " +
+                     self.parties[party].full_name + "</h3>")
+            html += "</div>"
+        display(HTML(html))
 
 
 # =================
