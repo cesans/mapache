@@ -10,7 +10,8 @@ For some of the current features see [/examples/features](https://github.com/ces
 
 TODOs
 
-* Plots
+* Plots, lots of plots
 * Smart color selection to avoid clashes
 * Automatic label placement without overlaps
 * Name matching between polls and parties
+* Coallitions and party selection (eg. top N over the last n polls)
