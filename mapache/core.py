@@ -13,8 +13,6 @@ from IPython.core.display import display, HTML
 from scipy.misc import imsave
 import base64
 
-import re
-
 
 class Party:
     """ A political party.
@@ -35,17 +33,19 @@ class Party:
                 party in polls
         """
         self.name = name
-        self._img = _get_image(picture_url)
+        self._img = self._get_image(picture_url)
         if not small_logo:
-            small_logo = picture_url # TODO refactor picture_url
-        self._small_logo = _get_image(small_logo)
-            # TODO reshape in a better way
-        self._small_logo =  transform.resize(self._small_logo, (40, 40))
+            small_logo = picture_url
+        # TODO refactor picture_url
+        self._small_logo = self._get_image(small_logo)
 
-        self.color = _get_color(self._img)
+        # TODO reshape in a better way
+        self._small_logo = transform.resize(self._small_logo, (40, 40))
+
+        self.color = self._get_color(self._img)
 
         if not short_name:
-                    #If the name is not short enough an abbreviation is created:
+            # If the name is not short enough an abbreviation is created:
             abbreviation = name
             if len(abbreviation) > 5:
                 new_ab = ''.join([x[0] for x in abbreviation.split(" ")])
@@ -87,6 +87,39 @@ class Party:
         plt.axis('off')
         fig.axes.get_xaxis().set_visible(False)
         fig.axes.get_yaxis().set_visible(False)
+
+    def _get_color(self, img):
+        """ TODO
+
+        :param img:
+        :return:
+        """
+
+        w, h, d = tuple(img.shape)
+        image_array = np.reshape(img, (w * h, d))
+        image_array_sample = shuffle(image_array, random_state=0)[:1000]
+        kmeans = KMeans(n_clusters=5, random_state=0).fit(image_array_sample)
+        colors = kmeans.cluster_centers_[:, :3]
+        unique, counts = np.unique(kmeans.predict(image_array),
+                                   return_counts=True)
+        for idx in np.argsort(counts)[::-1]:
+            if any(colors[unique[idx]] < 0.9):
+                color = colors[unique[idx]]
+                return color
+
+        return None
+
+    def _get_image(self, url):
+        """ TODO
+
+        :param url:
+        :return:
+        """
+
+        img = io.imread(url)
+        w, h, d = tuple(img.shape)
+        img = transform.resize(img, (240, int(h/w * 240)))
+        return img
 
 
 class PartySet:
@@ -134,14 +167,15 @@ class PartySet:
         """
         self.parties[party.short_name.upper()] = party
 
-    def __get_html_img(self, img, height=80):
+    def _get_html_img(self, img, height=80):
         buf = BytesIO()
         imsave(buf, img, format='png')
         buf.seek(0)
         img_64 = base64.b64encode(buf.read())
-        return '''<img style="height:''' + str(height) + '''px   ;display: block;margin: 0 auto;"
-                  src="data:image/png;base64,{0}\">
-                  '''.format(img_64.decode("utf8"))
+        return ('''<img style="height:''' + str(height) +
+                '''px ;display: block;margin: 0 auto;"
+                    src="data:image/png;base64,{0}\">
+                '''.format(img_64.decode("utf8")))
 
     def show_parties(self, small=False):
         html = "<div>"
@@ -150,8 +184,8 @@ class PartySet:
             if not small:
                 html += '''<div style="margin:10px;border:1px solid gray;
                            padding: 40x; width: 400px">'''''
-                html += self.__get_html_img(self.parties[party]._img)
-                html += self.__get_html_img(self.parties[party]._small_logo, 20)
+                html += self._get_html_img(self.parties[party]._img)
+                html += self._get_html_img(self.parties[party]._small_logo, 20)
                 html += ("<h3 style=\"text-align:center\">" +
                          self.parties[party].short_name + " - " +
                          self.parties[party].full_name + "</h3>")
@@ -160,8 +194,8 @@ class PartySet:
                 # TODO Show logos for coalitions
             else:
                 html += '''<div style="margin:3px;border:1px solid gray;
-                           padding: 1px; width: 100px; display:inline-block">'''
-                html += self.__get_html_img(self.parties[party]._small_logo, 40)
+                           padding:1px; width:100px; display:inline-block">'''
+                html += self._get_html_img(self.parties[party]._small_logo, 40)
                 html += ("<p style=\"text-align:center\">" +
                          self.parties[party].short_name + "</p>")
                 html += "</div>"
@@ -169,39 +203,51 @@ class PartySet:
         display(HTML(html))
 
 
-
-# =================
-# Useful functions
-# =================
-def _get_color(img):
+class Poll:
     """ TODO
 
-    :param img:
-    :return:
     """
+    def __init__(self,  parties, date, pollster='', error=None):
+        """ TODO
 
-    w, h, d = tuple(img.shape)
-    image_array = np.reshape(img, (w * h, d))
-    image_array_sample = shuffle(image_array, random_state=0)[:1000]
-    kmeans = KMeans(n_clusters=5, random_state=0).fit(image_array_sample)
-    colors = kmeans.cluster_centers_[:, :3]
-    unique, counts = np.unique(kmeans.predict(image_array), return_counts=True)
-    for idx in np.argsort(counts)[::-1]:
-        if any(colors[unique[idx]] < 0.9):
-            color = colors[unique[idx]]
-            return color
+        :param name:
+        :return:
+        """
+        
+        self.pollster = pollster
+        self.date = date
+        self.parties = parties
+        self.error = error
+        # TODO check types
+    
+    def get_party(self, party):
+        if party in self.parties:
+            return self.parties[party]
+        
+        return None
 
-    return None
-
-
-def _get_image(url):
+class PollsList:
     """ TODO
 
-    :param url:
-    :return:
     """
+    def __init__(self, name=''):
+        """ TODO
 
-    img = io.imread(url)
-    w, h, d = tuple(img.shape)
-    img = transform.resize(img, (240, int(h/w * 240)))
-    return img
+        :param name:
+        :return:
+        """
+        self._name = name
+        self.polls = []
+
+    def add(self, poll):
+        self.polls.append(poll)
+        # TODO check types
+
+    def get_party(self, party_name):
+        party_polls = []
+
+        for poll in self.polls:
+            party = poll.get_party(party_name)
+            if party:
+                party_polls.append((poll.date, party))
+        return party_polls
