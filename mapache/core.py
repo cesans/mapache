@@ -13,6 +13,8 @@ from IPython.core.display import display, HTML
 from scipy.misc import imsave
 import base64
 
+import re
+
 
 class Party:
     """ A political party.
@@ -20,7 +22,7 @@ class Party:
     """
 
     def __init__(self, name, picture_url, short_name=None, full_name=None,
-                 extra_names=None):
+                 extra_names=None, small_logo=None):
         """ A political party.
 
         :param name: Preferred name of the party to be used
@@ -34,47 +36,58 @@ class Party:
         """
         self.name = name
         self._img = _get_image(picture_url)
+        if not small_logo:
+            small_logo = picture_url # TODO refactor picture_url
+        self._small_logo = _get_image(small_logo)
+            # TODO reshape in a better way
+        self._small_logo =  transform.resize(self._small_logo, (40, 40))
+
         self.color = _get_color(self._img)
-        self.coalition = None
-    
+
         if not short_name:
-            short_name = name
+                    #If the name is not short enough an abbreviation is created:
+            abbreviation = name
+            if len(abbreviation) > 5:
+                new_ab = ''.join([x[0] for x in abbreviation.split(" ")])
+                if len(new_ab) < 2:
+                    new_ab = abbreviation[:3]
+                abbreviation = new_ab
+            short_name = abbreviation.upper()
         if not full_name:
             full_name = name
         if not extra_names:
             extra_names = []
 
         self.full_name = full_name
-        self.short_name = short_name[:4]
+        self.short_name = short_name[:6]
         self.extra_names = extra_names
+        self.coalition = None
 
     def get_coalition(self):
         return self.coalition
-    
-    def add_coalition_party(self, party):
-    
+
+    def add_to_coalition(self, party):
         if not self.coalition:
-            self.coalition = []
-        
-        self.coalition.append(party)
-    
-    def add_coalition_parties(self, parties):
-        if not self.coalition:
-            self.coalition = parties
+            self.coalition = [party]
         else:
-            self.coalition += parties
+            self.coalition.append(party)
 
     def show(self):
-        """Display the information of the political party."""        
+        """  Displays the information of the political party.
+        """
+
         print('Name: {0}'.format(self.name))
         print('Full name: {0}'.format(self.full_name))
         print('Short name: {0}'.format(self.short_name))
+        if self.coalition:
+            print('In this coalition: ', [p.name for p in self.coalition])
 
-        fig = plt.imshow(self._img, interpolation='nearest')
+        fig = plt.imshow(self._img, interpolation='none')
 
         plt.axis('off')
         fig.axes.get_xaxis().set_visible(False)
         fig.axes.get_yaxis().set_visible(False)
+
 
 class PartySet:
     """ TODO
@@ -98,7 +111,7 @@ class PartySet:
         return self.parties[key.upper()]
 
     def __delitem__(self, key):
-        del self.parties[key]
+        del self.parties[key.upper()]
 
     def __setitem__(self, key, value):
         self.parties[key] = value
@@ -119,41 +132,42 @@ class PartySet:
         :param party:
         :return:
         """
-        #check if exists
-        self.parties[party.name.upper()] = party
-    
-    def remove(self, party):
-        del self.parties[party.upper()]
-        
-    def __get_html_img(self, img):
+        self.parties[party.short_name.upper()] = party
+
+    def __get_html_img(self, img, height=80):
         buf = BytesIO()
         imsave(buf, img, format='png')
         buf.seek(0)
         img_64 = base64.b64encode(buf.read())
-        return '''<img style="height:80px;display: block;margin: 0 auto;"
+        return '''<img style="height:''' + str(height) + '''px   ;display: block;margin: 0 auto;"
                   src="data:image/png;base64,{0}\">
                   '''.format(img_64.decode("utf8"))
 
-    def show_parties(self):
-        html = ""
+    def show_parties(self, small=False):
+        html = "<div>"
+
         for party in self.parties.keys():
-            html += '''<div style="margin:10px;border:1px solid gray;
-                       padding: 20px">'''
-            html += self.__get_html_img(self.parties[party]._img)
-            html += ("<h3 style=\"text-align:center\">" + party + " - " +
-                     self.parties[party].full_name + "</h3>")
-            coalition = self.parties[party].get_coalition()
-            if coalition:
-                html += '<p style=\"text-align:center\"> *Including: '
-                for c in coalition:
-                    html += c.name + ', '
-                html = html[:-2]
-                html += '</p>'
-            html += "</div>"
-            
+            if not small:
+                html += '''<div style="margin:10px;border:1px solid gray;
+                           padding: 40x; width: 400px">'''''
+                html += self.__get_html_img(self.parties[party]._img)
+                html += self.__get_html_img(self.parties[party]._small_logo, 20)
+                html += ("<h3 style=\"text-align:center\">" +
+                         self.parties[party].short_name + " - " +
+                         self.parties[party].full_name + "</h3>")
+                html += "</div>"
+
+                # TODO Show logos for coalitions
+            else:
+                html += '''<div style="margin:3px;border:1px solid gray;
+                           padding: 1px; width: 100px; display:inline-block">'''
+                html += self.__get_html_img(self.parties[party]._small_logo, 40)
+                html += ("<p style=\"text-align:center\">" +
+                         self.parties[party].short_name + "</p>")
+                html += "</div>"
+        html += "</div>"
         display(HTML(html))
-        
-        
+
 
 
 # =================
