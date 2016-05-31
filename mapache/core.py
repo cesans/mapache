@@ -35,7 +35,8 @@ class Party:
         self.name = name
         self._img = _get_image(picture_url)
         self.color = _get_color(self._img)
-
+        self.coalition = None
+    
         if not short_name:
             short_name = name
         if not full_name:
@@ -47,10 +48,24 @@ class Party:
         self.short_name = short_name[:4]
         self.extra_names = extra_names
 
-    def show(self):
-        """  Displays the information of the political party.
-        """
+    def get_coalition(self):
+        return self.coalition
+    
+    def add_coalition_party(self, party):
+    
+        if not self.coalition:
+            self.coalition = []
+        
+        self.coalition.append(party)
+    
+    def add_coalition_parties(self, parties):
+        if not self.coalition:
+            self.coalition = parties
+        else:
+            self.coalition += parties
 
+    def show(self):
+        """Display the information of the political party."""        
         print('Name: {0}'.format(self.name))
         print('Full name: {0}'.format(self.full_name))
         print('Short name: {0}'.format(self.short_name))
@@ -60,9 +75,6 @@ class Party:
         plt.axis('off')
         fig.axes.get_xaxis().set_visible(False)
         fig.axes.get_yaxis().set_visible(False)
-
-        return fig
-
 
 class PartySet:
     """ TODO
@@ -107,8 +119,12 @@ class PartySet:
         :param party:
         :return:
         """
+        #check if exists
         self.parties[party.name.upper()] = party
-
+    
+    def remove(self, party):
+        del self.parties[party.upper()]
+        
     def __get_html_img(self, img):
         buf = BytesIO()
         imsave(buf, img, format='png')
@@ -126,8 +142,18 @@ class PartySet:
             html += self.__get_html_img(self.parties[party]._img)
             html += ("<h3 style=\"text-align:center\">" + party + " - " +
                      self.parties[party].full_name + "</h3>")
+            coalition = self.parties[party].get_coalition()
+            if coalition:
+                html += '<p style=\"text-align:center\"> *Including: '
+                for c in coalition:
+                    html += c.name + ', '
+                html = html[:-2]
+                html += '</p>'
             html += "</div>"
+            
         display(HTML(html))
+        
+        
 
 
 # =================
