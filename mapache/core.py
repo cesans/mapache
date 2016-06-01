@@ -13,6 +13,8 @@ from IPython.core.display import display, HTML
 from scipy.misc import imsave
 import base64
 
+import warnings
+
 
 class Party:
     """ A political party.
@@ -121,6 +123,44 @@ class Party:
         img = transform.resize(img, (240, int(h/w * 240)))
         return img
 
+    def levenshtein_distance(self, str1, str2):
+    
+        if not (str1 and str2):
+            return {'distance': 0, 'ratio': 0}
+        str1, str2 = str1.upper(), str2.upper()
+        m = len(str1)
+        n = len(str2)
+        lensum = float(m + n)
+        d = []
+        for i in range(m+1):
+            d.append([i])
+        del d[0][0]
+        for j in range(n+1):
+            d[0].append(j)
+        for j in range(1, n+1):
+            for i in range(1, m+1):
+                if str1[i-1] == str2[j-1]:
+                    d[i].insert(j, d[i-1][j-1])
+                else:
+                    minimum = min(d[i-1][j]+1, d[i][j-1]+1, d[i-1][j-1]+2)
+                    d[i].insert(j, minimum)
+        ldist = d[-1][-1]
+        ratio = (lensum - ldist)/lensum
+        return {'distance': ldist, 'ratio': ratio}
+
+    def get_all_names(self):
+        return (self.extra_names + [self.full_name] +
+                [self.name] + [self.short_name])
+
+    def match(self, party_name):
+        max_ratio = 0
+        for name in (self.extra_names + [self.full_name] +
+                     [self.name] + [self.short_name]):
+            max_ratio = max(max_ratio,
+                            self.levenshtein_distance(name,
+                                                      party_name)['ratio'])
+        return(max_ratio)
+
 
 class PartySet:
     """ TODO
@@ -141,6 +181,12 @@ class PartySet:
         return self
 
     def __getitem__(self, key):
+        if key.upper() in self.parties:
+            return self.parties[key.upper()]
+        matched = self.match(key)
+        if matched:
+            warnings.warn('Party was not found, returning closest match')
+            return matched
         return self.parties[key.upper()]
 
     def __delitem__(self, key):
@@ -166,6 +212,7 @@ class PartySet:
         :return:
         """
         self.parties[party.short_name.upper()] = party
+        
 
     def _get_html_img(self, img, height=80):
         buf = BytesIO()
@@ -202,6 +249,19 @@ class PartySet:
         html += "</div>"
         display(HTML(html))
 
+    def match(self, party_name, min_ratio=0.8):
+        max_party = None
+        max_ratio = 0
+        
+        for party in self.parties.values():
+            ratio = party.match(party_name)
+            if ratio > max_ratio:
+                max_ratio = ratio
+                max_party = party
+        if max_ratio < min_ratio:
+            max_party = None
+        return max_party
+
 
 class Poll:
     """ TODO
@@ -213,18 +273,53 @@ class Poll:
         :param name:
         :return:
         """
-        
+
         self.pollster = pollster
         self.date = date
         self.parties = parties
         self.error = error
         # TODO check types
-    
-    def get_party(self, party):
-        if party in self.parties:
-            return self.parties[party]
-        
+
+    def get_party(self, party, min_ratio=0.8, join_coalitions=True,
+                  return_partial=False):
+                  
+        # If return_partial return coalition votes even if not all parties 
+        # are in the poll
+        if party.name in self.parties:            
+            return self.parties[party.name]
+
+        for p in self.parties:
+            ratio = party.match(p)
+            if ratio > min_ratio:
+                return self.parties[p]
+
+        # This should be tested... unit tests are my friends?
+        if join_coalitions and party.coalition:
+            votes = 0
+            for party_coal in party.coalition:                
+                if party_coal.name in self.parties:
+                    votes += self.parties[party_coal.name]
+                else:
+                    for p in self.parties:                        
+                        ratio = party_coal.match(p)     
+                        if ratio > min_ratio:                      
+                            votes += self.parties[p]
+                            break                                
+                if not votes and not return_partial:
+                    return None
+            return votes
+
         return None
+
+    def print(self):
+        print('Pollster: {0}'.format(self.pollster))
+        print('Date: {0}'.format(self.date))
+        if self.error:
+            print('Error: {0}%  '.format(self.error))
+        print('-'*20)
+        for name, votes in self.parties.items():
+            print('{0}: {1}'.format(name, votes))
+
 
 class PollsList:
     """ TODO
@@ -240,14 +335,19 @@ class PollsList:
         self.polls = []
 
     def add(self, poll):
-        self.polls.append(poll)
+        if isinstance(poll, PollsList):
+            for p in poll.polls:
+                self.polls.append(p)
+        else:
+            self.polls.append(poll)
         # TODO check types
 
-    def get_party(self, party_name):
+    def get_party(self, party, join_coalitions=True):
         party_polls = []
 
         for poll in self.polls:
-            party = poll.get_party(party_name)
-            if party:
-                party_polls.append((poll.date, party))
+            poll_party = poll.get_party(party, join_coalitions=join_coalitions)
+            if poll_party:
+                party_polls.append((poll.date, poll_party))
+
         return party_polls
