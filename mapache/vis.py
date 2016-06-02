@@ -6,6 +6,8 @@ import numpy as np
 from matplotlib.ticker import FuncFormatter
 from matplotlib import gridspec
 from sklearn import gaussian_process
+import time
+import datetime
 
 class SingleBars:
     
@@ -63,6 +65,9 @@ class SingleBars:
         :return:
         """        
         self._fig.savefig(filename)
+
+
+
 def _percentage_formatter(y, _):
     """ TODO
     :param y:
@@ -87,6 +92,9 @@ class TimeSeries:
         :param parties:
         :return:
         """
+        #TODO sure?
+        plt.rcParams['figure.figsize'] = (18,12)
+        
         self.parties = parties
         self.columns = []
         self.__up_to_date = False
@@ -137,14 +145,14 @@ class TimeSeries:
             
         range_lengths = []
         for c in self.columns:
+            # TODO add get_dates() to ListPolls!!
             dates = [p.date for p in c['polls'].polls]
-            range_lengths.append(max(dates) - min(dates))
+            range_lengths.append((max(dates) - min(dates)).days)
         # range_lengths = [c['polls']['dates'][-1] - c['polls']['dates'][0] for c in self.columns]
         
         range_lengths_nonzero = [r for r in range_lengths if r != 0]
         total_length = (sum(range_lengths) / (1 - (len(self.columns) - len(range_lengths_nonzero)) * 0.1))
         range_lengths = [r / total_length if r != 0 else 0.1 for r in range_lengths]
-        print(range_lengths)
         gs = gridspec.GridSpec(1, len(self.columns), width_ratios=range_lengths)
 
         for i, c in enumerate(self.columns):
@@ -159,8 +167,10 @@ class TimeSeries:
 
         max_percentage = 0
         for i, c in enumerate(self.columns):
-            for name, percentages in c['polls']['parties'].items():
-                max_percentage = max(max_percentage, percentages.max())
+            for poll in c['polls'].polls:
+                for name, percentages in poll.parties.items():
+                    max_percentage = max(max_percentage, np.max(percentages))
+                
         yticks = [tick for tick in [10, 20, 30, 40, 50, 60, 70, 80, 90] if tick < max_percentage]
         for g in gs:
             ax = plt.subplot(g)
@@ -178,21 +188,20 @@ class TimeSeries:
 
         self.__fig = None
 
-        single = len(polls['dates']) == 1
+        #From type!!
+        dates = [p.date for p in polls.polls]
+
+        single = len(dates) == 1
 
         title_loc = 'left'
         if single:
             title_loc = 'center'
 
-        ax.set_title(polls['title'], loc=title_loc)
-
-        for name, percentages in polls['parties'].items():
-            self.__scatter(polls['dates'], percentages, ax, name, single)
-            if not single:
-                self.__gp(polls['dates'], percentages, ax, name)
-            if last:
-                plt.text(polls['dates'][-1] + 0.2, percentages[-1], self.parties[name].short_name,
-                         color=self.parties[name].color, weight='bold', verticalalignment='center')
+        ax.set_title(polls._name, loc=title_loc)
+        
+        self.__scatter(polls, self.parties, ax, single, last)
+        if not single:
+            self.__gp(polls, self.parties, ax)        
 
         ax.set_yticks([10, 20, 30, 40, 50, 60, 70, 80, 90], minor=False)
         ax.yaxis.grid(True, which='major')
@@ -207,27 +216,48 @@ class TimeSeries:
         formatter = FuncFormatter(_percentage_formatter)
         ax.get_yaxis().set_major_formatter(formatter)
 
-        ax.set_xlim(polls['dates'][0] - 0.5, polls['dates'][-1] + 0.5)
+        # ax.set_xlim(polls['dates'][0] - 0.5, polls['dates'][-1] + 0.5)
 
         if not first:
             ax.set_yticklabels([])
 
         if single:
-            ax.set_xticks(polls['dates'].reshape(1), minor=False)
+            #TODO fix!
+#            ax.set_xticks([polls.polls[0].date], minor=False)
+            pass
 
-    def __scatter(self, x, y, ax, partyname, single=False):
+    def __scatter(self, polls, parties, ax, single=False, last=False):
         """ TODO
         :param single:
         :return:
         """
+        
+        last_date = datetime.datetime.min
+        
+        for party in parties.parties.values():
+            polls_party = polls.get_party(party)
+            
+            dates = [x[0] for x in polls_party]
+            votes = [x[1] for x in polls_party]           
 
-        if single:
-            ax.scatter(x, y, 70, c=self.parties[partyname].color, edgecolors='none', label=u'Observations')
-        else:
-            ax.scatter(x, y, c=np.append(self.parties[partyname].color, [0.6]), edgecolors='none', s=40,
+            if single:
+                ax.scatter(dates, votes, 70, c=party.color, edgecolors='none', label=u'Observations')
+            else:
+                ax.scatter(dates, votes, c=np.append(party.color, [0.6]), edgecolors='none', s=40,
                        label=u'Observations')
+            
+            last_date = max(last_date, max(dates))
+        
+        
+        if last and False:
+            #TODO add name label at the end!
+             for party in parties.parties.values():
+                polls_party = polls.get_party(party)           
+                plt.text(last_date + 0.2, votes[-1], party.short_name,
+                          color=party.color, weight='bold', verticalalignment='center')
 
-    def __gp(self, x, y, ax, partyname):
+            
+    def __gp(self,polls, parties, ax):
         """ TODO
 
         :param x:
@@ -235,20 +265,34 @@ class TimeSeries:
         :param partyname:
         :return:
         """
+        for party in parties.parties.values():
+            polls_party = polls.get_party(party)
+            
+            dates = [x[0] for x in polls_party]
+            votes = [x[1] for x in polls_party]           
+        
+            x = dates
+            y = votes
 
-        x_dense = np.atleast_2d(np.linspace(x[0] - 0.5, x[-1] + 0.5, 1000)).T
+            # + 0.5 - 0.5?
+            
+            x_dense = np.atleast_2d(np.linspace(time.mktime(x[0].timetuple()),
+                                                time.mktime(x[-1].timetuple()), 1000)).T
+            #x_dense = np.atleast_2d(np.linspace(x[0], x[-1], 1000)).T
 
-        np.random.seed(1)
-        gp = gaussian_process.GaussianProcess(corr='squared_exponential', theta0=1e-1,
-                                              thetaL=1e-3, thetaU=1,
-                                              random_start=100, nugget=10 - 8)
-        gp.fit(x, y)
-        y_pred, mse = gp.predict(x_dense, eval_MSE=True)
-        sigma = np.sqrt(mse)
-
-        ax.plot(x_dense, y_pred, 'b-', label=u'Prediction', c=self.parties[partyname].color)
-        ax.fill(np.concatenate([x_dense, x_dense[::-1]]),
-                np.concatenate([y_pred - 1.9600 * sigma,
-                                (y_pred + 1.9600 * sigma)[::-1]]),
-                color=np.append(self.parties[partyname].color, [0.1]), fc='b', ec='None',
-                label='95% confidence interval')
+            np.random.seed(1)
+            gp = gaussian_process.GaussianProcess(corr='squared_exponential', theta0=1e-1,
+                                                  thetaL=1e-3, thetaU=1,
+                                                  random_start=100, nugget=10 - 8)
+            x = [time.mktime(xi.timetuple()) for xi in x]
+            gp.fit(np.reshape(x, (-1, 1)) + np.random.randn(len(x),1)*0.01, np.reshape(y,(-1, 1)))
+            y_pred, mse = gp.predict(x_dense, eval_MSE=True)
+            sigma = np.sqrt(mse)
+            x_dense = [datetime.datetime.fromtimestamp(xi) for xi in x_dense]
+            ax.plot(x_dense, y_pred, 'b-', label=u'Prediction', c=party.color, linewidth=3)
+            # TODO Check and (maybe) fix?
+            #  ax.fill(np.concatenate([x_dense, x_dense[::-1]]),
+            #        np.concatenate([y_pred - 1.9600 * sigma,
+            #                        (y_pred + 1.9600 * sigma)[::-1]]),
+            #       color=np.append(party.color, [0.1]), fc='b', ec='None',
+            #     label='95% confidence interval')
