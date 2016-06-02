@@ -15,6 +15,7 @@ import base64
 
 import warnings
 
+import re
 
 class Party:
     """ A political party.
@@ -124,7 +125,10 @@ class Party:
         return img
 
     def levenshtein_distance(self, str1, str2):
-    
+
+        str1 = re.sub(r'\W+', '', str1)
+        str2 = re.sub(r'\W+', '', str2)
+
         if not (str1 and str2):
             return {'distance': 0, 'ratio': 0}
         str1, str2 = str1.upper(), str2.upper()
