@@ -7,7 +7,62 @@ from matplotlib.ticker import FuncFormatter
 from matplotlib import gridspec
 from sklearn import gaussian_process
 
+class SingleBars:
+    
+    def __init__(self, poll, parties, elections=None, join_coalitions=True):
+         
+        self._fig, ax = plt.subplots()
 
+        plt.rcParams['xtick.labelsizfe'] = 16
+        plt.rcParams['axes.labelweight'] = 'bold'
+        plt.rcParams['font.weight'] = 'normal'
+        plt.rcParams['xtick.major.pad']='16'
+        plt.rcParams['axes.titlesize'] = 20
+        plt.rcParams['axes.titleweight'] = 'bold'
+
+        parties_votes = []
+
+        for i, p in enumerate(parties.parties.values()):    
+                parties_votes.append((p, poll.get_party(p,join_coalitions)))
+                
+        parties_votes.sort(key=lambda x: x[1], reverse=True)
+        parties_votes = []
+        for i, p in enumerate(parties.parties.values()):    
+            parties_votes.append((p, poll.get_party(p,join_coalitions)))
+            
+        parties_votes.sort(key=lambda x: x[1], reverse=True)
+        width = 0.6
+        left_lim = 0.1
+        plt.title(poll.pollster + poll.date.strftime(' - %-d %b'), loc='left', x=0, y=1.1, fontdict={'ha':'left'})
+        names = []
+        for i, (p, votes) in enumerate(parties_votes):    
+            a = ax.bar(left_lim+i, votes, width=width, color=p.color, edgecolor='none')
+            ax.text(left_lim+i+width/2, votes-4, '{0}%'.format(votes), 
+                   fontdict={'weight':'bold', 'color':'w', 'fontsize':'20', 'ha':'center', 'va':'center'})
+            names.append(p.short_name)
+            if elections:
+                vot =elections.get_party(p,join_coalitions)
+                if a:
+                    plt.plot([left_lim+i-0.1*width, left_lim+i+width+0.1*width], [vot, vot], color=[0.2,0.2,0.2], linewidth=3)
+
+        idx = np.arange(len(parties.parties))+width/2 + left_lim
+        ax.set_xticks(idx)
+        ax.set_xlim([0, idx[-1]+width/2 + left_lim])
+        ax.set_xticklabels(names);
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+        ax.xaxis.set_ticks_position('none') 
+        ax.yaxis.set_ticks_position('none') 
+        if poll.error:
+            plt.figtext(0.125,.94,'({}% error)'.format(poll.error), fontdict={'fontsize': 12})
+            
+    def export(self, filename):
+        """ TODO
+        :param filename:
+        :return:
+        """        
+        self._fig.savefig(filename)
 def _percentage_formatter(y, _):
     """ TODO
     :param y:
@@ -22,7 +77,7 @@ def _percentage_formatter(y, _):
         return s + '%'
 
 
-class PollVis:
+class TimeSeries:
     """ TODO
     """
 
@@ -79,12 +134,17 @@ class PollVis:
         if not self.columns:
             print('No columns have been added')
             return
-
-        range_lengths = [c['polls']['dates'][-1] - c['polls']['dates'][0] for c in self.columns]
+            
+        range_lengths = []
+        for c in self.columns:
+            dates = [p.date for p in c['polls'].polls]
+            range_lengths.append(max(dates) - min(dates))
+        # range_lengths = [c['polls']['dates'][-1] - c['polls']['dates'][0] for c in self.columns]
+        
         range_lengths_nonzero = [r for r in range_lengths if r != 0]
         total_length = (sum(range_lengths) / (1 - (len(self.columns) - len(range_lengths_nonzero)) * 0.1))
         range_lengths = [r / total_length if r != 0 else 0.1 for r in range_lengths]
-
+        print(range_lengths)
         gs = gridspec.GridSpec(1, len(self.columns), width_ratios=range_lengths)
 
         for i, c in enumerate(self.columns):

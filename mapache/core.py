@@ -5,6 +5,7 @@ from sklearn.cluster import KMeans
 from sklearn.utils import shuffle
 
 import matplotlib.pylab as plt
+from matplotlib.patches import Rectangle
 import numpy as np
 
 from io import BytesIO
@@ -99,6 +100,8 @@ class Party:
 
         w, h, d = tuple(img.shape)
         image_array = np.reshape(img, (w * h, d))
+        if d==4:
+            image_array = image_array[image_array[:,-1] == 1]
         image_array_sample = shuffle(image_array, random_state=0)[:1000]
         kmeans = KMeans(n_clusters=5, random_state=0).fit(image_array_sample)
         colors = kmeans.cluster_centers_[:, :3]
@@ -161,6 +164,18 @@ class Party:
                                                       party_name)['ratio'])
         return(max_ratio)
 
+    def show_color(self):
+        plt.rcParams['figure.figsize'] = (3,3)
+
+        fig, ax = plt.subplots()
+        ax.set_aspect('equal', 'datalim')
+
+        r = Rectangle((0,0),1,1, color=self.color)
+        ax.add_patch(r)
+        ax.text(0.5, 0.5, self.short_name, fontdict={'weight':'bold', 'color':'w', 'fontsize':'30', 'ha':'center', 'va':'center'})
+
+        ax.axis('off')
+        
 
 class PartySet:
     """ TODO
@@ -180,6 +195,19 @@ class PartySet:
         self.__current = -1
         return self
 
+    def extract(self, parties):         
+        new_list = type(self)()
+        new_list.__dict__.update(self.__dict__)
+        
+        new_list.parties = {}      
+        for party in parties:
+            p = self.match(party)
+            if not p:
+                raise Exception
+                # TODO exception!
+            new_list.add(p)
+        return new_list
+        
     def __getitem__(self, key):
         if key.upper() in self.parties:
             return self.parties[key.upper()]
