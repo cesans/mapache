@@ -15,7 +15,7 @@ class SingleBars:
          
         self._fig, ax = plt.subplots()
 
-        plt.rcParams['xtick.labelsizfe'] = 16
+        plt.rcParams['xtick.labelsize'] = 16
         plt.rcParams['axes.labelweight'] = 'bold'
         plt.rcParams['font.weight'] = 'normal'
         plt.rcParams['xtick.major.pad']='16'
