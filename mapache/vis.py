@@ -82,6 +82,8 @@ def _percentage_formatter(y, _):
         return s + '%'
 
 
+
+
 class TimeSeries:
     """ TODO
     """
@@ -223,7 +225,7 @@ class TimeSeries:
 
         if single:
             #TODO fix!
-#            ax.set_xticks([polls.polls[0].date], minor=False)
+            ax.set_xticks([polls.polls[0].date], minor=False)
             pass
 
     def __scatter(self, polls, parties, ax, single=False, last=False):
