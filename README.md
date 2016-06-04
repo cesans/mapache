@@ -1,4 +1,4 @@
-# mapache
+[mapache](doc/source/mapache.png)
 
 #### Work in progress, not much done yet.
 

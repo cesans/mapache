@@ -133,7 +133,7 @@ class Party:
         img = transform.resize(img, (240, int(h/w * 240)))
         return img
 
-    def levenshtein_distance(self, str1, str2):
+    def _levenshtein_distance(self, str1, str2):
     
         if not (str1 and str2):
             return {'distance': 0, 'ratio': 0}
@@ -167,7 +167,7 @@ class Party:
         for name in (self.extra_names + [self.full_name] +
                      [self.name] + [self.short_name]):
             max_ratio = max(max_ratio,
-                            self.levenshtein_distance(name,
+                            self._levenshtein_distance(name,
                                                       party_name)['ratio'])
         return(max_ratio)
 
