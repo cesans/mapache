@@ -12,7 +12,8 @@ import datetime
 class SingleBars:
     
     def __init__(self, poll, parties, elections=None, join_coalitions=True):
-         
+        plt.rcParams['figure.figsize'] = (12, 6)
+
         self._fig, ax = plt.subplots()
 
         plt.rcParams['xtick.labelsize'] = 16
@@ -130,8 +131,6 @@ class TimeSeries:
         # TODO
         if self.__fig is None:
             self.__create_fig()
-
-        print(filename)
 
         pass
 
@@ -252,7 +251,6 @@ class TimeSeries:
         
         
         if last:
-            print('last')
             # TODO move to last point of regression, not poll
             #TODO add name label at the end!
             for party in parties.parties.values():
@@ -260,7 +258,6 @@ class TimeSeries:
                  
                  last_date_arg = np.argmin([x[0] for x in polls_party])
                  votes = polls_party[last_date_arg][1]
-                 print(last_date_arg, votes)
                  polls_party = polls.get_party(party)           
                  plt.text(last_date, votes, '  ' + party.short_name,
                           color=party.color, weight='bold', 

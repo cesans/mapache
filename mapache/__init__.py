@@ -2,7 +2,7 @@
 
 from mapache.core import *
 import mapache.vis
-import mapache.polls
+import mapache.parseutils
 
 __all__ = ["core", "vis", "polls"]
 
