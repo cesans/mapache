@@ -251,12 +251,20 @@ class TimeSeries:
             last_date = max(last_date, max(dates))
         
         
-        if last and False:
+        if last:
+            print('last')
+            # TODO move to last point of regression, not poll
             #TODO add name label at the end!
-             for party in parties.parties.values():
-                polls_party = polls.get_party(party)           
-                plt.text(last_date + 0.2, votes[-1], party.short_name,
-                          color=party.color, weight='bold', verticalalignment='center')
+            for party in parties.parties.values():
+                 polls_party = polls.get_party(party)
+                 
+                 last_date_arg = np.argmin([x[0] for x in polls_party])
+                 votes = polls_party[last_date_arg][1]
+                 print(last_date_arg, votes)
+                 polls_party = polls.get_party(party)           
+                 plt.text(last_date, votes, '  ' + party.short_name,
+                          color=party.color, weight='bold', 
+                          verticalalignment='center', fontsize=20)
 
             
     def __gp(self,polls, parties, ax):
