@@ -16,15 +16,14 @@ import base64
 
 import warnings
 
-import re
 
 class Party:
     """ A political party.
 
     """
 
-    def __init__(self, name, picture_url, short_name=None, full_name=None,
-                 extra_names=None, small_logo=None):
+    def __init__(self, name, logo_url, short_name=None, full_name=None,
+                 extra_names=None, small_logo_url=None):
         """ A political party.
 
         :param name: Preferred name of the party to be used
@@ -37,16 +36,10 @@ class Party:
                 party in polls
         """
         self.name = name
-        self._img = self._get_image(picture_url)
-        if not small_logo:
-            small_logo = picture_url
-        # TODO refactor picture_url
-        self._small_logo = self._get_image(small_logo)
+        self.set_logo(logo_url)
+        self.set_small_logo(small_logo_url)
 
-        # TODO reshape in a better way
-        self._small_logo = transform.resize(self._small_logo, (40, 40))
-
-        self.color = self._get_color(self._img)
+        self.color = self._get_color(self._logo)
 
         if not short_name:
             # If the name is not short enough an abbreviation is created:
@@ -63,10 +56,23 @@ class Party:
             extra_names = []
 
         self.full_name = full_name
-        self.short_name = short_name[:6]
+        self.short_name = short_name[:7]
         self.extra_names = extra_names
         self.coalition = None
 
+    def set_logo(self, url):
+        self._logo = self._get_image(url)
+
+    def set_small_logo(self, url):
+        if not url:
+            self._small_logo = self._logo
+        else:
+            self._small_logo = self._get_image(url)
+        
+        # TODO reshape in a better way
+        self._small_logo = transform.resize(self._small_logo, (40, 40))
+
+        
     def get_coalition(self):
         return self.coalition
 
@@ -86,7 +92,7 @@ class Party:
         if self.coalition:
             print('In this coalition: ', [p.name for p in self.coalition])
 
-        fig = plt.imshow(self._img, interpolation='none')
+        fig = plt.imshow(self._logo, interpolation='none')
 
         plt.axis('off')
         fig.axes.get_xaxis().set_visible(False)
@@ -128,10 +134,7 @@ class Party:
         return img
 
     def levenshtein_distance(self, str1, str2):
-
-        str1 = re.sub(r'\W+', '', str1)
-        str2 = re.sub(r'\W+', '', str2)
-
+    
         if not (str1 and str2):
             return {'distance': 0, 'ratio': 0}
         str1, str2 = str1.upper(), str2.upper()
@@ -246,28 +249,37 @@ class PartySet:
         self.parties[party.short_name.upper()] = party
         
 
-    def _get_html_img(self, img, height=80):
+    def _get_html_img(self, img, height=80, inline=False):
         buf = BytesIO()
         imsave(buf, img, format='png')
         buf.seek(0)
         img_64 = base64.b64encode(buf.read())
+        display = 'block'
+        if inline:
+            display = 'inline-block'
         return ('''<img style="height:''' + str(height) +
-                '''px ;display: block;margin: 0 auto;"
-                    src="data:image/png;base64,{0}\">
-                '''.format(img_64.decode("utf8")))
-
+                '''px ;display: {0};margin: 0 auto;"
+                    src="data:image/png;base64,{1}\">
+                '''.format(display,img_64.decode("utf8")))
     def show_parties(self, small=False):
         html = "<div>"
-
         for party in self.parties.keys():
             if not small:
-                html += '''<div style="margin:10px;border:1px solid gray;
-                           padding: 40x; width: 400px">'''''
-                html += self._get_html_img(self.parties[party]._img)
-                html += self._get_html_img(self.parties[party]._small_logo, 20)
-                html += ("<h3 style=\"text-align:center\">" +
+                html += '''<div style="margin:10px;border:1px solid #AAAAAA;
+                            width: 400px; width: 50%; margin: 5px auto; 
+                            display:inline-block;">'''
+                html += '''<div style="display:inline-block; margin: 10px">'''
+                html += self._get_html_img(self.parties[party]._small_logo, 20, inline=True)
+                fname = self.parties[party].full_name
+                if len(fname) > 45:
+                    fname = fname[:41] + '...'
+                html += ("<h3 style=\"display: inline-block; margin-top:5px\";>" +
                          self.parties[party].short_name + " - " +
-                         self.parties[party].full_name + "</h3>")
+                         fname + "</h3>")
+                html += "</div>"                            
+                html += '''<div style="margin: 10px auto">'''
+                html += self._get_html_img(self.parties[party]._logo)
+                html += "</div>"                            
                 html += "</div>"
 
                 # TODO Show logos for coalitions
@@ -350,7 +362,7 @@ class Poll:
             print('Error: {0}%  '.format(self.error))
         print('-'*20)
         for name, votes in self.parties.items():
-            print('{0}: {1}'.format(name, votes))
+            print('{0}: {1:.2f}%'.format(name, votes))
 
 
 class PollsList:
