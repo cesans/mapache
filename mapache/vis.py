@@ -3,8 +3,6 @@
 import matplotlib.pylab as plt
 import matplotlib
 import numpy as np
-from matplotlib.ticker import FuncFormatter
-from matplotlib import gridspec
 from sklearn import gaussian_process
 import time
 import datetime
@@ -154,7 +152,7 @@ class TimeSeries:
         range_lengths_nonzero = [r for r in range_lengths if r != 0]
         total_length = (sum(range_lengths) / (1 - (len(self.columns) - len(range_lengths_nonzero)) * 0.1))
         range_lengths = [r / total_length if r != 0 else 0.1 for r in range_lengths]
-        gs = gridspec.GridSpec(1, len(self.columns), width_ratios=range_lengths)
+        gs = matplotlib.gridspec.GridSpec(1, len(self.columns), width_ratios=range_lengths)
 
         for i, c in enumerate(self.columns):
             ax = plt.subplot(gs[i])
@@ -214,7 +212,7 @@ class TimeSeries:
         ax.spines['left'].set_visible(False)
         ax.yaxis.set_ticks_position('none')
         ax.xaxis.set_ticks_position('bottom')
-        formatter = FuncFormatter(_percentage_formatter)
+        formatter = matplotlib.ticker.FuncFormatter(_percentage_formatter)
         ax.get_yaxis().set_major_formatter(formatter)
 
         # ax.set_xlim(polls['dates'][0] - 0.5, polls['dates'][-1] + 0.5)
@@ -287,7 +285,7 @@ class TimeSeries:
                                                 time.mktime(x[-1].timetuple()), 1000)).T
             #x_dense = np.atleast_2d(np.linspace(x[0], x[-1], 1000)).T
 
-            np.random.seed(1)
+            np.random.seed(1)            
             gp = gaussian_process.GaussianProcess(corr='squared_exponential', theta0=1e-1,
                                                   thetaL=1e-3, thetaU=1,
                                                   random_start=100, nugget=10 - 8)

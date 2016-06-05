@@ -2,7 +2,7 @@
 import numpy as np
 
 import matplotlib.pylab as plt
-from matplotlib.patches import Rectangle
+import matplotlib
 
 from sklearn.cluster import KMeans
 from sklearn.utils import shuffle
@@ -187,7 +187,7 @@ class Party:
         fig, ax = plt.subplots()
         ax.set_aspect('equal', 'datalim')
 
-        r = Rectangle((0, 0), 1, 1, color=self.color)
+        r = matplotlib.patches.Rectangle((0, 0), 1, 1, color=self.color)
         ax.add_patch(r)
         ax.text(0.5, 0.5, self.short_name,
                 fontdict={'weight': 'bold', 'color': 'w', 'fontsize': '30',
@@ -487,14 +487,16 @@ class Poll:
         return None
 
     def __str__(self):
-        print('Pollster: {0}'.format(self.pollster))
-        print('Date: {0}'.format(self.date))
+        toprint = ''
+        toprint += 'Pollster: {0}\n'.format(self.pollster)
+        toprint += 'Date: {0}\n'.format(self.date)
         if self.error:
-            print('Error: {0}%  '.format(self.error))
-        print('-'*20)
+            toprint += 'Error: {0}% \n'.format(self.error)
+        toprint += '-'*20 + '\n'
         for name, votes in self.parties.items():
-            print('{0}: {1:.2f}%'.format(name, votes))
+            toprint += '{0}: {1:.2f}%\n'.format(name, votes)
 
+        return toprint
 
 class PollsList:
     """ TODO
