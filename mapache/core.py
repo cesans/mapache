@@ -33,20 +33,20 @@ class Party:
                         although other names can be provided. If ``short_name``
                         is not indicated, ``name`` will be used to crate an
                         abbreviation.
-            picture_url (Optional(str)): url to the party logo, the color for the party
-                        will be generated from the image.
-            short_name (Optional(List(str)): Abbreviation of the party name to be
-                        displayed when there is no space for ``name``. Maximum
-                        of 7 characters.
+            picture_url (Optional(str)): url to the party logo, the color for
+                        the party will be generated from the image.
+            short_name (Optional(List(str)): Abbreviation of the party name to
+                        be displayed when there is no space for ``name``.
+                        Maximum of 7 characters.
             full_name (Optional(str)): Official, full name of the part
-            extra_names (Optional(List)str)): Any number of extra names of the party to help
-                        matching the party to polls (eg. names in different
-                        languages).
+            extra_names (Optional(List)str)): Any number of extra names of the
+                        party to help matching the party to polls (eg. names
+                        in different languages).
         """
         self.name = name
         self.set_logo(logo_url)
         self.set_thumbnail(thumbnail_url)
-    
+
         if not short_name:
             # If the name is not short enough an abbreviation is created:
             abbreviation = name
@@ -144,11 +144,7 @@ class Party:
         The logo is displayed as a matplotlib image.
         """
 
-        print('Name: {0}'.format(self.name))
-        print('Full name: {0}'.format(self.full_name))
-        print('Short name: {0}'.format(self.short_name))
-        if self.coalition:
-            print('In this coalition: ', [p.name for p in self.coalition])
+        print(self)
 
         fig = plt.imshow(np.array(self._logo))
 
@@ -158,9 +154,9 @@ class Party:
 
     def get_all_names(self):
         """ All names of the party
-        
+
         Returns:
-            (List(str)): name, short_name, full_name and extra_names 
+            (List(str)): name, short_name, full_name and extra_names
                          of the party
         """
         return (self.extra_names + [self.full_name] +
@@ -168,7 +164,7 @@ class Party:
 
     def match(self, party_name):
         """ Evaluates how well a name matches this party.
-        
+
         mapache.core._levenshtein_distance is used for the comparison.
         All names of the party are used in the comparison.
 
@@ -270,11 +266,11 @@ class Party:
 
     def _levenshtein_distance(self, str1, str2):
         """ Levenshtein distance between two strings
-        
+
         The Levenshtein distance between two strings is the minmium number
         of char additions, deletions or sustitutions to get from the first
         string to the second one.
-        
+
         Adapted from:
                 https://rosettacode.org/wiki/Levenshtein_distance#Iterative
 
@@ -309,6 +305,20 @@ class Party:
         ldist = d[-1][-1]
         ratio = (lensum - ldist)/lensum
         return {'distance': ldist, 'ratio': ratio}
+
+    def __str__(self):
+        """ Returns:
+                str: Party information"""
+        toprint = ''
+        toprint += 'Name: {0}\n'.format(self.name)
+        toprint += 'Full name: {0}\n'.format(self.full_name)
+        toprint += 'Short name: {0}\n'.format(self.short_name)
+        if self.coalition:
+            toprint += 'In this coalition: '
+            toprint += ','.join(map(str, self.coalition))
+        toprint += '\n'
+        return(toprint)
+
 
 class PartySet:
     """ TODO
@@ -481,7 +491,7 @@ class Poll:
 
         return None
 
-    def print(self):
+    def __str__(self):
         print('Pollster: {0}'.format(self.pollster))
         print('Date: {0}'.format(self.date))
         if self.error:
