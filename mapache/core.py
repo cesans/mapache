@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""Core elements of mapache.
-
-This module contains the core elements to manage parties and polls
-"""
-
 import numpy as np
 
 import matplotlib.pylab as plt
