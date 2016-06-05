@@ -10,8 +10,6 @@ import matplotlib
 from sklearn.cluster import KMeans
 from sklearn.utils import shuffle
 
-from IPython.core.display import display, HTML
-
 from PIL import Image
 import base64
 from io import BytesIO
@@ -455,7 +453,7 @@ class PartySet:
                          self.parties[party].short_name + "</p>")
                 html += "</div>"
         html += "</div>"
-        display(HTML(html))
+        return html
 
     def match(self, party_name, min_ratio=0.8):
         max_party = None
