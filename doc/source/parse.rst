@@ -1,5 +1,5 @@
-Parse stuff
-===========
+Parsing tools (for Wikipedia polls)
+====================================
 
 .. automodule:: mapache.parseutils
 
