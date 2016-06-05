@@ -5,7 +5,6 @@ import urllib.request
 
 from dateutil.parser import parse
 
-<<<<<<< HEAD
 try:
     from tqdm import tqdm
 except:
@@ -13,9 +12,6 @@ except:
         if args:
             return args[0]
         return kwargs.get('iterable', None)
-=======
-from tqdm import tqdm
->>>>>>> eff2206f9edf189c7c80846825a53397b956505d
 
 def poll_from_table(table, date_column, party_columns, name=None, party_names=None, 
                     error_column=None, pollster_column=None, poll_rows=None):

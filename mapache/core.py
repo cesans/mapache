@@ -133,11 +133,7 @@ class Party:
         img = transform.resize(img, (240, int(h/w * 240)))
         return img
 
-<<<<<<< HEAD
     def _levenshtein_distance(self, str1, str2):
-=======
-    def levenshtein_distance(self, str1, str2):
->>>>>>> eff2206f9edf189c7c80846825a53397b956505d
     
         if not (str1 and str2):
             return {'distance': 0, 'ratio': 0}
