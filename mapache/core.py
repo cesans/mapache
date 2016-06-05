@@ -25,25 +25,28 @@ import warnings
 class Party:
 
     def __init__(self, name, logo_url, short_name=None, full_name=None,
-                 extra_names=None, small_logo_url=None):
+                 extra_names=None, thumbnail_url=None):
         """ Implements a political party.
-    
-        
-        :param name: Preferred name of the party to be used
-        :param picture_url: url to the party logo, the color for the party will
-                be generated from the image
-        :param short_name: Name of the party displayed when there is no space
-                or the preferred name is
-        :param full_name: Oficial name of the party
-        :param extra_names: Extra names (to help the algorithms to find the
-                party in polls
+
+        Args:
+            name (str): Name of the party. The preferred name to be used,
+                        although other names can be provided. If ``short_name``
+                        is not indicated, ``name`` will be used to crate an
+                        abbreviation.
+            picture_url (Optional(str)): url to the party logo, the color for the party
+                        will be generated from the image.
+            short_name (Optional(List(str)): Abbreviation of the party name to be
+                        displayed when there is no space for ``name``. Maximum
+                        of 7 characters.
+            full_name (Optional(str)): Official, full name of the part
+            extra_names (Optional(List)str)): Any number of extra names of the party to help
+                        matching the party to polls (eg. names in different
+                        languages).
         """
         self.name = name
         self.set_logo(logo_url)
-        self.set_small_logo(small_logo_url)
-
-        self.color = self._get_color(self._logo)
-
+        self.set_thumbnail(thumbnail_url)
+    
         if not short_name:
             # If the name is not short enough an abbreviation is created:
             abbreviation = name
@@ -64,31 +67,81 @@ class Party:
         self.coalition = None
 
     def set_logo(self, url):
+        """ Set the logo and updates the party color
+
+            The image is download from ``url`` and the color of the party
+            ``self.color`` is updated to the principal color of the image
+
+            Args:
+                url (str): url to a image with the logo of the party
+        """
         self._logo = self._get_image(url)
+        self.color = self._get_color(self._logo)
 
-    def set_small_logo(self, url):
+    def get_logo(self, url):
+        """ Current logo of the party
+
+            Returns:
+                PIL.Image: Current logo of the party
+        """
+        return self._logo
+
+    def set_thumbnail(self, url=None):
+        """ Set the thumbnail of the party
+
+            The size of the thumbnail will be 80x80 and squared images are
+            preferred. If no url is provided the logo of the party will be used
+            as the thumbnail.
+
+            Args:
+                url (Optional(str)): url to a image with the small logo
+                                     of the party
+        """
+
         if not url:
-            self._small_logo = self._logo.copy()
+            if self._logo:
+                self._thumbnail = self._logo.copy()
         else:
-            self._small_logo = self._get_image(url)
-        
-        w, h = self._small_logo.size
-        
-        # TODO reshape in a better way
-        self._small_logo.thumbnail((80, 80), Image.ANTIALIAS)
+            self._thumbnail = self._get_image(url)
 
-        
-    def get_coalition(self):
-        return self.coalition
+        w, h = self._thumbnail.size
+
+        self._thumbnail.thumbnail((80, 80), Image.ANTIALIAS)
+
+    def get_thumbnail(self, url):
+        """ Current thumbnail of the party
+
+        Returns:
+            PIL.Image: Current thumbnail of the party
+        """
+
+        return self._thumbnail
 
     def add_to_coalition(self, party):
+        """ Consider this party a coalition and add a party to it
+
+        When the first party is added this party becomes a coalition. The
+        parties in the coalition will be used to match the party with polls
+        if the opposite is not specified.
+
+        Args:
+            party (mapache.Party): party to be added to the coalition
+        """
         if not self.coalition:
             self.coalition = [party]
         else:
             self.coalition.append(party)
 
+    def get_coalition(self):
+        """ Return parties being part of the coalition
+        """
+        return self.coalition
+
     def show(self):
-        """  Displays the information of the political party.
+        """  Shows the information of the party.
+
+        Displays the names, parties in the coalition and the logo of the party.
+        The logo is displayed as a matplotlib image.
         """
 
         print('Name: {0}'.format(self.name))
@@ -98,28 +151,97 @@ class Party:
             print('In this coalition: ', [p.name for p in self.coalition])
 
         fig = plt.imshow(np.array(self._logo))
-        
+
         plt.axis('off')
         fig.axes.get_xaxis().set_visible(False)
         fig.axes.get_yaxis().set_visible(False)
 
-    def _get_color(self, img):
-        """ TODO
+    def get_all_names(self):
+        """ All names of the party
+        
+        Returns:
+            (List(str)): name, short_name, full_name and extra_names 
+                         of the party
+        """
+        return (self.extra_names + [self.full_name] +
+                [self.name] + [self.short_name])
 
-        :param img:
-        :return:
+    def match(self, party_name):
+        """ Evaluates how well a name matches this party.
+        
+        mapache.core._levenshtein_distance is used for the comparison.
+        All names of the party are used in the comparison.
+
+        Args:
+            party_name (str): name to be evaluated
+        """
+
+        max_ratio = 0
+        for name in (self.extra_names + [self.full_name] +
+                     [self.name] + [self.short_name]):
+            max_ratio = max(max_ratio,
+                            self._levenshtein_distance(name,
+                                                       party_name)['ratio'])
+        return(max_ratio)
+
+    def show_color(self):
+        """ Shows the color selected for the party_name
+
+            A patch with the color of the party and its abreviation in white
+            is displayed using matplotlib.
+        """
+
+        plt.rcParams['figure.figsize'] = (3, 3)
+
+        fig, ax = plt.subplots()
+        ax.set_aspect('equal', 'datalim')
+
+        r = Rectangle((0, 0), 1, 1, color=self.color)
+        ax.add_patch(r)
+        ax.text(0.5, 0.5, self.short_name,
+                fontdict={'weight': 'bold', 'color': 'w', 'fontsize': '30',
+                          'ha': 'center', 'va': 'center'})
+
+        ax.axis('off')
+
+    def _get_color(self, img, pixels_to_sample=1000, nclusters=5):
+        """ Select the principal color of an image.
+
+        A number of pixels is randomly sampled and used to cluster the colors
+        in the image. Then each pixel of the image is assigned to a cluster to
+        find the main color of the image.
+        The most frequent color is preferred and whites (all RGB values > 0.9)
+        are discarded.
+
+        Args:
+            img (PIL.image): logo of the party
+            pixels_to_sample (Optional(int)): number of pixels randomly sampled
+            nclusters (Optional(int)): number of colors(clusters) to consider
+        Returns:
+            (List(float)): RGB (0 to 1) list with the main color of the party
+                           or None if the selection fails (eg. because it is
+                           white)
         """
         img = np.array(img, dtype=np.uint8)/255.
         w, h, d = tuple(img.shape)
         image_array = np.reshape(img, (w * h, d))
-        if d==4:
-            image_array = image_array[image_array[:,-1] == 1]
-            
-        image_array_sample = shuffle(image_array, random_state=0)[:1000]
-        kmeans = KMeans(n_clusters=5, random_state=0).fit(image_array_sample)
+        if d == 4:
+            image_array = image_array[image_array[:, -1] == 1]
+
+        # pixels_to_sample pixels are randomly extracted from the image
+        image_array_sample = shuffle(image_array,
+                                     random_state=0)[:pixels_to_sample]
+
+        # the pixels are clustered in n_clusters
+        kmeans = KMeans(n_clusters=nclusters,
+                        random_state=0).fit(image_array_sample)
         colors = kmeans.cluster_centers_[:, :3]
+
+        # all the pixels in the image are assigned to a cluster and the cluster
+        # with more pixels is selected as sthe main color of the image
+        # white colors (all RGB values > 0.9) are discarded
         unique, counts = np.unique(kmeans.predict(image_array),
-                                   return_counts=True)        
+                                   return_counts=True)
         for idx in np.argsort(counts)[::-1]:
             if any(colors[unique[idx]] < 0.9):
                 color = colors[unique[idx]]
@@ -128,18 +250,43 @@ class Party:
         return None
 
     def _get_image(self, url):
-        """ TODO
+        """ Downloads an image.
 
-        :param url:
-        :return:
+        The image is downloaded and resized to a width of 240
+
+        TODO: set maximum height as well
+
+        Args:
+            url (str): url of the image
+
+        Returns:
+            PIL.Image: image
         """
+
         img = Image.open(urllib.request.urlopen(url))
         w, h = img.size
         img = img.resize((240, int(h/w * 240)), Image.ANTIALIAS)
         return img
 
     def _levenshtein_distance(self, str1, str2):
-    
+        """ Levenshtein distance between two strings
+        
+        The Levenshtein distance between two strings is the minmium number
+        of char additions, deletions or sustitutions to get from the first
+        string to the second one.
+        
+        Adapted from:
+                https://rosettacode.org/wiki/Levenshtein_distance#Iterative
+
+        Args:
+            str1 (str): first string
+            str2 (str): second string
+
+        Returns:
+            Dict: 'distance': the Levenshtein distance
+                  'ratio': (len(str1)+len(str1)-distance)/(len(str1)+len(str1))
+
+        """
         if not (str1 and str2):
             return {'distance': 0, 'ratio': 0}
         str1, str2 = str1.upper(), str2.upper()
@@ -162,32 +309,6 @@ class Party:
         ldist = d[-1][-1]
         ratio = (lensum - ldist)/lensum
         return {'distance': ldist, 'ratio': ratio}
-
-    def get_all_names(self):
-        return (self.extra_names + [self.full_name] +
-                [self.name] + [self.short_name])
-
-    def match(self, party_name):
-        max_ratio = 0
-        for name in (self.extra_names + [self.full_name] +
-                     [self.name] + [self.short_name]):
-            max_ratio = max(max_ratio,
-                            self._levenshtein_distance(name,
-                                                      party_name)['ratio'])
-        return(max_ratio)
-
-    def show_color(self):
-        plt.rcParams['figure.figsize'] = (3,3)
-
-        fig, ax = plt.subplots()
-        ax.set_aspect('equal', 'datalim')
-
-        r = Rectangle((0,0),1,1, color=self.color)
-        ax.add_patch(r)
-        ax.text(0.5, 0.5, self.short_name, fontdict={'weight':'bold', 'color':'w', 'fontsize':'30', 'ha':'center', 'va':'center'})
-
-        ax.axis('off')
-        
 
 class PartySet:
     """ TODO
@@ -274,7 +395,7 @@ class PartySet:
                             width: 400px; width: 50%; margin: 5px auto; 
                             display:inline-block;">'''
                 html += '''<div style="display:inline-block; margin: 10px">'''
-                html += self._get_html_img(self.parties[party]._small_logo, 20, inline=True)
+                html += self._get_html_img(self.parties[party]._thumbnail, 20, inline=True)
                 fname = self.parties[party].full_name
                 if len(fname) > 45:
                     fname = fname[:41] + '...'
@@ -291,7 +412,7 @@ class PartySet:
             else:
                 html += '''<div style="margin:3px;border:1px solid gray;
                            padding:1px; width:100px; display:inline-block">'''
-                html += self._get_html_img(self.parties[party]._small_logo, 40)
+                html += self._get_html_img(self.parties[party]._thumbnail, 40)
                 html += ("<p style=\"text-align:center\">" +
                          self.parties[party].short_name + "</p>")
                 html += "</div>"

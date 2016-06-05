@@ -7,7 +7,7 @@ Creating a party
 .. autoclass:: Party
         :members:
 
-Grouping Parties
+Grouping parties
 ~~~~~~~~~~~~~~~~~
 .. autoclass:: PartySet
         :members:
