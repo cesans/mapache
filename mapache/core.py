@@ -1,31 +1,34 @@
-# mapache, @cesans 2016 (c)
+# -*- coding: utf-8 -*-
+"""Core elements of mapache.
 
-from skimage import io, transform
-from sklearn.cluster import KMeans
-from sklearn.utils import shuffle
+This module contains the core elements to manage parties and polls
+"""
+
+import numpy as np
 
 import matplotlib.pylab as plt
 from matplotlib.patches import Rectangle
-import numpy as np
 
-from io import BytesIO
+from sklearn.cluster import KMeans
+from sklearn.utils import shuffle
+
 from IPython.core.display import display, HTML
 
-from scipy.misc import imsave
+from PIL import Image
 import base64
+from io import BytesIO
+import urllib.request
 
 import warnings
 
 
 class Party:
-    """ A political party.
-
-    """
 
     def __init__(self, name, logo_url, short_name=None, full_name=None,
                  extra_names=None, small_logo_url=None):
-        """ A political party.
-
+        """ Implements a political party.
+    
+        
         :param name: Preferred name of the party to be used
         :param picture_url: url to the party logo, the color for the party will
                 be generated from the image
@@ -65,12 +68,14 @@ class Party:
 
     def set_small_logo(self, url):
         if not url:
-            self._small_logo = self._logo
+            self._small_logo = self._logo.copy()
         else:
             self._small_logo = self._get_image(url)
         
+        w, h = self._small_logo.size
+        
         # TODO reshape in a better way
-        self._small_logo = transform.resize(self._small_logo, (40, 40))
+        self._small_logo.thumbnail((80, 80), Image.ANTIALIAS)
 
         
     def get_coalition(self):
@@ -92,8 +97,8 @@ class Party:
         if self.coalition:
             print('In this coalition: ', [p.name for p in self.coalition])
 
-        fig = plt.imshow(self._logo, interpolation='none')
-
+        fig = plt.imshow(np.array(self._logo))
+        
         plt.axis('off')
         fig.axes.get_xaxis().set_visible(False)
         fig.axes.get_yaxis().set_visible(False)
@@ -104,16 +109,17 @@ class Party:
         :param img:
         :return:
         """
-
+        img = np.array(img, dtype=np.uint8)/255.
         w, h, d = tuple(img.shape)
         image_array = np.reshape(img, (w * h, d))
         if d==4:
             image_array = image_array[image_array[:,-1] == 1]
+            
         image_array_sample = shuffle(image_array, random_state=0)[:1000]
         kmeans = KMeans(n_clusters=5, random_state=0).fit(image_array_sample)
         colors = kmeans.cluster_centers_[:, :3]
         unique, counts = np.unique(kmeans.predict(image_array),
-                                   return_counts=True)
+                                   return_counts=True)        
         for idx in np.argsort(counts)[::-1]:
             if any(colors[unique[idx]] < 0.9):
                 color = colors[unique[idx]]
@@ -127,10 +133,9 @@ class Party:
         :param url:
         :return:
         """
-
-        img = io.imread(url)
-        w, h, d = tuple(img.shape)
-        img = transform.resize(img, (240, int(h/w * 240)))
+        img = Image.open(urllib.request.urlopen(url))
+        w, h = img.size
+        img = img.resize((240, int(h/w * 240)), Image.ANTIALIAS)
         return img
 
     def _levenshtein_distance(self, str1, str2):
@@ -251,7 +256,7 @@ class PartySet:
 
     def _get_html_img(self, img, height=80, inline=False):
         buf = BytesIO()
-        imsave(buf, img, format='png')
+        img.save(buf, format='png')
         buf.seek(0)
         img_64 = base64.b64encode(buf.read())
         display = 'block'
