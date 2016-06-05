@@ -150,8 +150,8 @@ class Party:
         Returns:
             (list): all the names of the party (long, short, extra...)
         """
-        return (self.extra_names + [self.full_name] +
-                [self.name] + [self.short_name])
+        return set((self.extra_names + [self.full_name] +
+                   [self.name] + [self.short_name]))
 
     def match(self, party_name):
         """Evaluate how well a name matches this party.
@@ -163,8 +163,7 @@ class Party:
             party_name (str): name to be evaluated
         """
         max_ratio = 0
-        for name in (self.extra_names + [self.full_name] +
-                     [self.name] + [self.short_name]):
+        for name in self.get_all_names():
             max_ratio = max(max_ratio,
                             self._levenshtein_distance(name,
                                                        party_name)['ratio'])
@@ -284,13 +283,14 @@ class Party:
 
         """
         abbreviation = name
+        
         if len(abbreviation) > max_characters:
             new_ab = ''.join([x[0] for x in abbreviation.split(" ")])
-            if len(new_ab) < 2:
+            if len(new_ab) <= 2:
                 new_ab = abbreviation[:3]
             abbreviation = new_ab
-        short_name = abbreviation.upper()
-        return short_name
+            abbreviation = abbreviation.upper()
+        return abbreviation
 
     def _levenshtein_distance(self, str1, str2):
         """Compute the levenshtein distance between two strings.

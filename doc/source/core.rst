@@ -3,6 +3,7 @@ Parties and Polls
 .. automodule:: mapache.core
 
 
+
 Creating a party
 ~~~~~~~~~~~~~~~~~
 .. autoclass:: Party
