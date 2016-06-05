@@ -7,15 +7,12 @@ python:
   - "3.5-dev" # 3.5 development branch
   - "nightly" # currently points to 3.6-dev
 
+
+before_install:
+ - sudo apt-get install libblas-dev liblapack-dev libatlas-base-dev gfortran
+
 # command to install dependencies
 install: "pip install -r requirements.txt"
 
 # command to run tests
 script: nosetests
-
-virtualenv:
-  system_site_packages: true
-
-before_install:
- - sudo apt-get install -qq python-numpy python-scipy
-
