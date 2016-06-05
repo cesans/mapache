@@ -1,17 +1,9 @@
-[mapache](doc/source/mapache.png)
+![mapache](doc/source/mapache.png)
 
-#### Work in progress, not much done yet.
+*An early-stage work-in-progress library for the analysis and visualization of opinion polls and other electoral data.*
 
-There are lots of Python packages out there, but none for elections, polls, and other politics-related data visualization. Let´s code it.
 
-Heavily 'influenced' by [@kikollan](https://twitter.com/kikollan) visualizations for [El Español](http://www.elespanol.com/kiko_llaneras/), no clue if he agrees with this idea.
+Heavily influenced by [@kikollan](https://twitter.com/kikollan) visualizations for [El Español](http://www.elespanol.com/kiko_llaneras/).
 
-For some of the current features see [/examples/features](https://github.com/cesans/mapache/blob/master/examples/features.ipynb).
-
-TODOs
-
-* Plots, lots of plots
-* Smart color selection to avoid clashes
-* Automatic label placement without overlaps
-* Name matching between polls and parties
-* Coallitions and party selection (eg. top N over the last n polls)
+* Some of the current [features](https://github.com/cesans/mapache/blob/master/examples/features.ipynb).
+* [Documentation (WIP)](http://mapache.readthedocs.org)
