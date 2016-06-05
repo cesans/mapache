@@ -7,6 +7,8 @@ Heavily influenced by [@kikollan](https://twitter.com/kikollan) visualizations f
 * Some of the current [features](https://github.com/cesans/mapache/blob/master/examples/features.ipynb).
 * [Documentation (WIP)](http://mapache.readthedocs.org)
 
+__Visualization of a single poll for the 2015 Spanish general election__
 ![mapache](doc/source/one_poll_bars.png)
 
+__Time series with all the polls__
 ![mapache](doc/source/time_series.png)
