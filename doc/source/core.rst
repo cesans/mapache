@@ -2,12 +2,12 @@ Parties and Polls
 ==================
 .. automodule:: mapache.core
 
-Core elements of mapache.
 
 Creating a party
 ~~~~~~~~~~~~~~~~~
 .. autoclass:: Party
-        :members:
+    :special-members:
+    :members:
 
 Grouping parties
 ~~~~~~~~~~~~~~~~~
